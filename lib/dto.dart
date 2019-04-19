@@ -15,3 +15,23 @@ class Movie {
     );
   }
 }
+
+class Version {
+  String resolution;
+  String target;
+  String url;
+  String magnet;
+  String size;
+
+  Version({this.resolution, this.target, this.url, this.magnet, this.size});
+
+  factory Version.fromJson(Map<String, dynamic> json) {
+    return Version(
+        resolution: json['resolution'],
+        target: json['target'],
+        url: json['url'],
+        magnet: json['magnet'],
+        size: json['size']
+    );
+  }
+}

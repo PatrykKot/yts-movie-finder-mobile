@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:yts_finder_mobile/dto.dart';
 import 'package:yts_finder_mobile/service.dart';
 
@@ -24,26 +26,60 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final List<Movie> _movies = [];
-  final _query = TextEditingController();
   final movieService = MovieService();
+  final versionService = VersionService();
 
-  var _loading = false;
+  var _movieLoading = false;
 
-  _search() {
-    var query = _query.text.trim();
+  _search(String value) {
+    var query = value.trim();
 
-    if (!_loading && query.isNotEmpty) {
+    if (!_movieLoading && query.isNotEmpty) {
       setState(() {
-        _loading = true;
+        _movieLoading = true;
       });
 
-      movieService.fetchMovies(query).then((newMovies) => {
-            setState(() {
-              _loading = false;
-              _movies.clear();
-              _movies.addAll(newMovies);
-            })
+      movieService.fetchMovies(query).then((newMovies) {
+        setState(() {
+          _movies.clear();
+          _movies.addAll(newMovies);
+        });
+      }).catchError((error) {
+        Fluttertoast.showToast(msg: error.toString());
+      }).whenComplete(() {
+        setState(() {
+          _movieLoading = false;
+        });
+      });
+    }
+  }
+
+  _searchVersion(Movie movie) {
+    versionService.fetchVersion(movie).then((versions) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return SimpleDialog(children: _buildDialogList(versions));
           });
+    }).catchError((error) {
+      Fluttertoast.showToast(msg: error.toString());
+    });
+  }
+
+  List<Widget> _buildDialogList(List<Version> versions) {
+    return versions.map((version) {
+      return SimpleDialogOption(
+          child:
+              Text("${version.resolution} ${version.target}: ${version.size}"),
+          onPressed: () => _launchUrl(version.url));
+    }).toList();
+  }
+
+  _launchUrl(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
     }
   }
 
@@ -52,18 +88,15 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
         appBar: AppBar(
           title: TextField(
-            controller: _query,
             decoration: InputDecoration(labelText: "Enter title"),
+            onSubmitted: _search,
           ),
-          actions: <Widget>[
-            IconButton(icon: Icon(Icons.search), onPressed: _search)
-          ],
         ),
         body: buildBody());
   }
 
   Widget buildBody() {
-    if (_loading) {
+    if (_movieLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -77,24 +110,17 @@ class _MyHomePageState extends State<MyHomePage> {
     } else {
       return Stack(children: <Widget>[
         ListView(
-            itemExtent: 130,
             children: _movies
                 .map((movie) => ListTile(
                       title: Text(movie.title),
                       subtitle: Text(movie.year),
-                        leading: Image.network(
-                          movie.img,
-                          fit: BoxFit.fill,
-                        ),
+                      leading: Image.network(
+                        movie.img,
+                      ),
+                      onTap: () => _searchVersion(movie),
                     ))
                 .toList())
       ]);
     }
-  }
-
-  @override
-  void dispose() {
-    _query.dispose();
-    super.dispose();
   }
 }

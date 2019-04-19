@@ -18,3 +18,18 @@ class MovieService {
     }
   }
 }
+
+class VersionService {
+  Future<List<Version>> fetchVersion(Movie movie) async {
+    var url =
+        Uri.http(baseUrl, "/version/url/find", {"url": movie.url}).toString();
+    var response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      Iterable list = json.decode(response.body);
+      return list.map((json) => Version.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load versions. Code ${response.statusCode}');
+    }
+  }
+}
