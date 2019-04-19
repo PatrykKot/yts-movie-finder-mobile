@@ -71,15 +71,15 @@ class _MyHomePageState extends State<MyHomePage> {
       return SimpleDialogOption(
           child:
               Text("${version.resolution} ${version.target}: ${version.size}"),
-          onPressed: () => _launchUrl(version.url));
+          onPressed: () => _launch(version));
     }).toList();
   }
 
-  _launchUrl(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+  _launch(Version version) async {
+    if (await canLaunch(version.magnet)) {
+      await launch(version.magnet);
     } else {
-      throw 'Could not launch $url';
+      Fluttertoast.showToast(msg: 'Cannot run torrent');
     }
   }
 
