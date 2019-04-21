@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yts_finder_mobile/dto.dart';
+import 'package:yts_finder_mobile/network.dart';
 import 'package:yts_finder_mobile/service.dart';
 
 void main() => runApp(MyApp());
@@ -74,7 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
         context: context,
         builder: (BuildContext context) {
-          return SimpleDialog(children: _buildDialogList(movie));
+          return SimpleDialog(
+              children: _buildDialogList(movie), title: Text("Choose version"));
         });
   }
 
@@ -82,16 +84,27 @@ class _MyHomePageState extends State<MyHomePage> {
     return movie.torrents.map((torrent) {
       return SimpleDialogOption(
           child: Text("${torrent.quality} ${torrent.type}: ${torrent.size}"),
-          onPressed: () => _launch(torrent));
+          onPressed: () => _checkVpnAndLaunch(torrent));
     }).toList();
   }
 
-  _launch(Torrent version) async {
-    var magnet = version.magnet;
+  _checkVpnAndLaunch(Torrent torrent) async {
+    if (!await isVpnEnabled()) {
+      Fluttertoast.showToast(
+          msg: "VPN is disabled. Your downloading is insecure",
+          textColor: Colors.red);
+      await Future.delayed(Duration(seconds: 1));
+    }
+
+    await _launch(torrent);
+  }
+
+  _launch(Torrent torrent) async {
+    var magnet = torrent.magnet;
     if (await canLaunch(magnet)) {
       await launch(magnet);
     } else {
-      Fluttertoast.showToast(msg: 'Cannot run torrent');
+      Fluttertoast.showToast(msg: 'You have no torrent clients installed');
     }
   }
 
