@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,57 +29,64 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final List<Movie> _movies = [];
   final movieService = MovieService();
-  final versionService = VersionService();
 
-  var _movieLoading = false;
+  final searchQueryController = new TextEditingController();
+  Timer searchDebounce;
+  var movieLoading = false;
+
+  _onQueryChanged() {
+    if (searchDebounce?.isActive ?? false) {
+      searchDebounce.cancel();
+    }
+
+    searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      _search(searchQueryController.text);
+    });
+  }
 
   _search(String value) {
     var query = value.trim();
 
-    if (!_movieLoading && query.isNotEmpty) {
+    if (!movieLoading && query.isNotEmpty) {
       setState(() {
-        _movieLoading = true;
+        movieLoading = true;
       });
 
-      movieService.fetchMovies(query).then((newMovies) {
+      movieService.fetchMovies(query).then((response) {
         setState(() {
           _movies.clear();
-          _movies.addAll(newMovies);
+          _movies.addAll(response.data.movies);
         });
       }).catchError((error) {
         Fluttertoast.showToast(msg: error.toString());
       }).whenComplete(() {
         setState(() {
-          _movieLoading = false;
+          movieLoading = false;
         });
       });
     }
   }
 
-  _searchVersion(Movie movie) {
-    versionService.fetchVersion(movie).then((versions) {
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleDialog(children: _buildDialogList(versions));
-          });
-    }).catchError((error) {
-      Fluttertoast.showToast(msg: error.toString());
-    });
+  _showTorrents(Movie movie) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SimpleDialog(children: _buildDialogList(movie));
+        });
   }
 
-  List<Widget> _buildDialogList(List<Version> versions) {
-    return versions.map((version) {
+  List<Widget> _buildDialogList(Movie movie) {
+    return movie.torrents.map((torrent) {
       return SimpleDialogOption(
-          child:
-              Text("${version.resolution} ${version.target}: ${version.size}"),
-          onPressed: () => _launch(version));
+          child: Text("${torrent.quality} ${torrent.type}: ${torrent.size}"),
+          onPressed: () => _launch(torrent));
     }).toList();
   }
 
-  _launch(Version version) async {
-    if (await canLaunch(version.magnet)) {
-      await launch(version.magnet);
+  _launch(Torrent version) async {
+    var magnet = version.magnet;
+    if (await canLaunch(magnet)) {
+      await launch(magnet);
     } else {
       Fluttertoast.showToast(msg: 'Cannot run torrent');
     }
@@ -88,15 +97,15 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
         appBar: AppBar(
           title: TextField(
+            controller: searchQueryController,
             decoration: InputDecoration(labelText: "Enter title"),
-            onSubmitted: _search,
           ),
         ),
         body: buildBody());
   }
 
   Widget buildBody() {
-    if (_movieLoading) {
+    if (movieLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -113,14 +122,27 @@ class _MyHomePageState extends State<MyHomePage> {
             children: _movies
                 .map((movie) => ListTile(
                       title: Text(movie.title),
-                      subtitle: Text(movie.year),
+                      subtitle: Text(movie.year.toString()),
                       leading: Image.network(
-                        movie.img,
+                        movie.smallCoverImage,
                       ),
-                      onTap: () => _searchVersion(movie),
+                      onTap: () => _showTorrents(movie),
                     ))
                 .toList())
       ]);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    searchQueryController.addListener(_onQueryChanged);
+  }
+
+  @override
+  void dispose() {
+    searchQueryController.removeListener(_onQueryChanged);
+    searchQueryController.dispose();
+    super.dispose();
   }
 }

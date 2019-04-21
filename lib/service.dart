@@ -3,33 +3,23 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:yts_finder_mobile/dto.dart';
 
-const baseUrl = "samoloty.szczecin.pl:8080";
+const baseUrl = "yts.am";
 
 class MovieService {
-  Future<List<Movie>> fetchMovies(String query) async {
-    var url = Uri.http(baseUrl, "/movie/find", {"query": query}).toString();
+  Future<MovieResponse> fetchMovies(String query) async {
+    var url = Uri.https(baseUrl, "/api/v2/list_movies.json", {
+      "limit": 50.toString(),
+      "query_term": query,
+      "sort_by": "year",
+      "order_by": "desc"
+    });
     var response = await http.get(url);
 
     if (response.statusCode == 200) {
-      Iterable list = json.decode(response.body);
-      return list.map((json) => Movie.fromJson(json)).toList();
+      return MovieResponse.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to load movies. Code ${response.statusCode}');
-    }
-  }
-}
-
-class VersionService {
-  Future<List<Version>> fetchVersion(Movie movie) async {
-    var url =
-        Uri.http(baseUrl, "/version/url/find", {"url": movie.url}).toString();
-    var response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      Iterable list = json.decode(response.body);
-      return list.map((json) => Version.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load versions. Code ${response.statusCode}');
+      throw Exception(
+          "Failed to load movies. Status code ${response.statusCode}");
     }
   }
 }
