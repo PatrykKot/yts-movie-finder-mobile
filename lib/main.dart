@@ -49,13 +49,14 @@ class _MyHomePageState extends State<MyHomePage> {
     var query = value.trim();
 
     if (!movieLoading && query.isNotEmpty && lastSearchQuery != query) {
+      lastSearchQuery = query;
+
       setState(() {
         movieLoading = true;
       });
 
       movieService.fetchMovies(query).then((response) {
         setState(() {
-          lastSearchQuery = query;
           _movies.clear();
           _movies.addAll(response.data.movies);
         });
