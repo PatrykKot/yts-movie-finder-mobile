@@ -33,6 +33,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final searchQueryController = new TextEditingController();
   Timer searchDebounce;
   var movieLoading = false;
+  var lastSearchQuery = "";
 
   _onQueryChanged() {
     if (searchDebounce?.isActive ?? false) {
@@ -47,13 +48,14 @@ class _MyHomePageState extends State<MyHomePage> {
   _search(String value) {
     var query = value.trim();
 
-    if (!movieLoading && query.isNotEmpty) {
+    if (!movieLoading && query.isNotEmpty && lastSearchQuery != query) {
       setState(() {
         movieLoading = true;
       });
 
       movieService.fetchMovies(query).then((response) {
         setState(() {
+          lastSearchQuery = query;
           _movies.clear();
           _movies.addAll(response.data.movies);
         });
