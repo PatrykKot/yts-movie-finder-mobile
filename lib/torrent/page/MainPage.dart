@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:yts_movie_finder/torrent/dto/Movie.dart';
-import 'package:yts_movie_finder/torrent/dto/Torrent.dart';
+import 'package:yts_movie_finder/torrent/page/MovieDetailsPage.dart';
 import 'package:yts_movie_finder/torrent/service/MovieService.dart';
 
 class MainPage extends StatefulWidget {
@@ -84,36 +83,10 @@ class _MainPageState extends State<MainPage> {
   }
 
   _showTorrents(Movie movie) {
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return SimpleDialog(
-              children: _buildDialogList(movie), title: Text("Choose version"));
-        });
-  }
-
-  List<Widget> _buildDialogList(Movie movie) {
-    return movie.torrents.map((torrent) {
-      return SimpleDialogOption(
-          child: Text("${torrent.quality} ${torrent.type}: ${torrent.size}"),
-          onPressed: () => _launch(torrent));
-    }).toList();
-  }
-
-  _launch(Torrent torrent) async {
-    var magnet = torrent.magnet;
-    if (await canLaunch(magnet)) {
-      await launch(magnet);
-    } else {
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-        content: Text(
-          'You have no torrent clients installed',
-          style: TextStyle(color: Colors.white),
-        ),
-        duration: Duration(seconds: 1),
-        backgroundColor: Colors.red,
-      ));
-    }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => MovieDetailsPage(
+              movie: movie,
+            )));
   }
 
   @override
