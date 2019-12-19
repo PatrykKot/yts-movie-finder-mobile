@@ -20,7 +20,7 @@ class _MainPageState extends State<MainPage> {
   final searchQueryController = new TextEditingController();
   Timer searchDebounce;
   var movieLoading = false;
-  var lastSearchQuery = "";
+  var lastSearchQuery;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -28,6 +28,8 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     searchQueryController.addListener(_onQueryChanged);
+
+    _search('');
   }
 
   @override
@@ -50,7 +52,7 @@ class _MainPageState extends State<MainPage> {
   _search(String value) async {
     var query = value.trim();
 
-    if (!movieLoading && query.isNotEmpty && lastSearchQuery != query) {
+    if (!movieLoading && lastSearchQuery != query) {
       lastSearchQuery = query;
 
       setState(() {
