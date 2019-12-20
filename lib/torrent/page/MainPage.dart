@@ -22,6 +22,7 @@ class _MainPageState extends State<MainPage> {
   var lastSearchQuery;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  final appBarFieldFocus = FocusNode();
 
   @override
   void initState() {
@@ -82,8 +83,9 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  _showTorrents(Movie movie) {
-    Navigator.of(context).push(MaterialPageRoute(
+  _showTorrents(Movie movie) async {
+    appBarFieldFocus.unfocus();
+    await Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => MovieDetailsPage(
               movie: movie,
             )));
@@ -95,6 +97,10 @@ class _MainPageState extends State<MainPage> {
         key: scaffoldKey,
         appBar: AppBar(
           title: TextField(
+            focusNode: appBarFieldFocus,
+            onSubmitted: (value) {
+              _search(value);
+            },
             controller: searchQueryController,
             decoration: InputDecoration(labelText: "Enter title"),
           ),
